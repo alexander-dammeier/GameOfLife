@@ -111,14 +111,15 @@ func (game *gameOfLife) calcAdvancedState(pos position) cell {
 }
 
 // countAliveNeighbors counts the alive cells surrounding the given position. There can be at most 8 neighbours
-func (game *gameOfLife) countAliveNeighbors(pos position) int {
+func (game *gameOfLife) countAliveNeighbors(ownPosition position) int {
 	aliveCounter := 0
-	for i := -1; i <= 1; i++ {
-		for j := -1; j <= 1; j++ {
-			if i == 0 && j == 0 {
+	for verticalOffset := -1; verticalOffset <= 1; verticalOffset++ {
+		for horizontalOffset := -1; horizontalOffset <= 1; horizontalOffset++ {
+			positionToCheck := ownPosition.plus(verticalOffset, horizontalOffset)
+			if positionToCheck == ownPosition {
 				continue
 			}
-			if game.getOrDead(position{x: pos.x + i, y: pos.y + j}) == alive {
+			if game.getOrDead(positionToCheck) == alive {
 				aliveCounter++
 			}
 		}
@@ -134,9 +135,13 @@ func (game *gameOfLife) getOrDead(pos position) cell {
 	return dead
 }
 
-func (position position) isOutOfBounds(fieldSize fieldSize) bool {
-	return position.x < 0 ||
-		position.x >= fieldSize.height ||
-		position.y < 0 ||
-		position.y >= fieldSize.width
+func (pos position) isOutOfBounds(fieldSize fieldSize) bool {
+	return pos.x < 0 ||
+		pos.x >= fieldSize.height ||
+		pos.y < 0 ||
+		pos.y >= fieldSize.width
+}
+
+func (pos position) plus(x, y int) position {
+	return position{x: pos.x + x, y: pos.y + y}
 }
