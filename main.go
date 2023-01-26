@@ -7,21 +7,36 @@ import (
 )
 
 type gameOfLife struct {
-	field     [][]placement
+	field     [][]cell
 	iteration int
 }
 
-type placement string
+type cell string
 
 const (
-	alive placement = "x"
-	dead  placement = "_"
+	alive cell = "x"
+	dead  cell = "_"
 )
 
+type cellGenerator = func(x, y int) cell
+
+var randomCellGenerator = func(x, y int) cell {
+	if rand.Intn(2) == 1 {
+		return alive
+	}
+	return dead
+}
+
+var deadCellGenerator = func(x, y int) cell {
+	return dead
+}
+
 func main() {
-	tillIteration := 10
-	for game := generate(120, 17); game.iteration <= tillIteration; game = game.advance() {
+	game := generateNewGame(120, 17, randomCellGenerator)
+	untilIteration := 10
+	for game.iteration <= untilIteration {
 		printGame(game)
+		game = game.advance()
 	}
 }
 
@@ -35,26 +50,17 @@ func printGame(game *gameOfLife) {
 	}
 }
 
-func generate(width, height int) *gameOfLife {
-	field := initField(width, height)
-	for x := 0; x < height; x++ {
-		for y := 0; y < width; y++ {
-			if rand.Intn(2) == 1 {
-				field[x][y] = alive
-			} else {
-				field[x][y] = dead
-			}
-		}
-	}
+func generateNewGame(width, height int, generator cellGenerator) *gameOfLife {
+	field := initField(width, height, generator)
 	return &gameOfLife{field: field, iteration: 0}
 }
 
-func initField(width, height int) [][]placement {
-	field := make([][]placement, height)
+func initField(width, height int, generator cellGenerator) [][]cell {
+	field := make([][]cell, height)
 	for x := 0; x < height; x++ {
-		field[x] = make([]placement, width)
+		field[x] = make([]cell, width)
 		for y := 0; y < width; y++ {
-			field[x][y] = dead
+			field[x][y] = generator(x, y)
 		}
 	}
 	return field
@@ -62,7 +68,7 @@ func initField(width, height int) [][]placement {
 
 func (game *gameOfLife) advance() *gameOfLife {
 	width, height := game.getSize()
-	advancedField := initField(width, height)
+	advancedField := initField(width, height, deadCellGenerator)
 	wg := new(sync.WaitGroup)
 	wg.Add(height)
 	for x := 0; x < height; x++ {
@@ -77,7 +83,7 @@ func (game *gameOfLife) advance() *gameOfLife {
 	return &gameOfLife{iteration: game.iteration + 1, field: advancedField}
 }
 
-func (game *gameOfLife) getAdvancedState(x, y int) placement {
+func (game *gameOfLife) getAdvancedState(x, y int) cell {
 	isAlive := game.field[x][y] == alive
 	aliveNeighbours := game.countAliveNeighbors(x, y)
 	if isAlive {
@@ -119,7 +125,7 @@ func (game *gameOfLife) getSize() (width int, height int) {
 	return
 }
 
-func (game *gameOfLife) getOrDead(x int, y int) placement {
+func (game *gameOfLife) getOrDead(x int, y int) cell {
 	width, height := game.getSize()
 	if x >= 0 && x < height && y >= 0 && y < width {
 		return game.field[x][y]
